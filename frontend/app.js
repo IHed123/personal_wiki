@@ -7,11 +7,73 @@ let editingEnabled = localStorage.getItem('editingEnabled') === 'true';
 
 /* ---------------- FILE TREE ---------------- */
 async function loadFiles() {
-    const res = await fetch(`${API}/files`);
-    const files = await res.json();
+    // Prefer the richer metadata endpoint; fall back to simple list
+    let items = [];
+    try {
+        const res = await fetch(`${API}/files_meta`);
+        if (res.ok) items = await res.json();
+    } catch (e) {
+        // ignore
+    }
 
-    const tree = buildTree(files);
-    renderTree(tree, document.getElementById("file-tree"));
+    if (!items || items.length === 0) {
+        // fallback to old endpoint (just paths)
+        try {
+            const r2 = await fetch(`${API}/files`);
+            const files = await r2.json();
+            items = files.map(p => ({ path: p, title: p.split('/').pop(), section: p.split('/').length>1 ? p.split('/')[0] : '' }));
+        } catch (e) {
+            items = [];
+        }
+    }
+
+    renderSections(items, document.getElementById('file-tree'));
+}
+
+
+function renderSections(items, container) {
+    container.innerHTML = '';
+    // group by section
+    const groups = {};
+    items.forEach(it => {
+        const sec = it.section || 'root';
+        if (!groups[sec]) groups[sec] = [];
+        groups[sec].push(it);
+    });
+
+    const orderedSections = Object.keys(groups).sort((a,b) => {
+        if (a === 'root') return 1;
+        if (b === 'root') return -1;
+        return a.localeCompare(b);
+    });
+
+    orderedSections.forEach(sec => {
+        const header = document.createElement('li');
+        header.classList.add('folder');
+        header.textContent = (sec === 'root') ? 'Other / Root' : sec;
+
+        const subList = document.createElement('ul');
+        subList.style.display = 'block';
+        groups[sec].forEach(it => {
+            const li = document.createElement('li');
+            li.textContent = it.title || it.path.split('/').pop();
+            li.dataset.path = it.path;
+            li.classList.add('file-item');
+            li.title = it.path;
+            li.onclick = (e) => { e.stopPropagation(); loadPage(it.path); };
+            subList.appendChild(li);
+        });
+
+        // allow collapsing
+        header.style.cursor = 'pointer';
+        header.onclick = (e) => {
+            e.stopPropagation();
+            subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
+        };
+
+        container.appendChild(header);
+        container.appendChild(subList);
+    });
 }
 
 function buildTree(paths) {
@@ -211,6 +273,18 @@ document.getElementById("font-size").oninput = (e) => {
     document.getElementById("editor").style.fontSize = e.target.value + "px";
 };
 
+// OpenWebUI settings: load/save URL from Settings input
+const openwebuiInput = document.getElementById('openwebui-url');
+if (openwebuiInput) {
+    const existing = localStorage.getItem('OPENWEBUI_URL') || (typeof OPENWEBUI_URL !== 'undefined' ? OPENWEBUI_URL : '');
+    openwebuiInput.value = existing;
+    openwebuiInput.onchange = (e) => {
+        const v = e.target.value.trim();
+        if (v) localStorage.setItem('OPENWEBUI_URL', v);
+        else localStorage.removeItem('OPENWEBUI_URL');
+    };
+}
+
 /* ---------------- EDIT MODE ---------------- */
 function applyEditingMode() {
     const editorCol = document.getElementById('editor-column');
@@ -298,10 +372,13 @@ document.getElementById("chat-open").onclick = () => {
         return;
     }
     const iframe = document.getElementById('openwebui-iframe');
-    if (typeof OPENWEBUI_URL !== 'undefined' && iframe) {
-        iframe.src = OPENWEBUI_URL;
+    // Prefer a user-set URL in localStorage, otherwise fall back to config.js OPENWEBUI_URL
+    let url = localStorage.getItem('OPENWEBUI_URL');
+    if (!url && typeof OPENWEBUI_URL !== 'undefined') url = OPENWEBUI_URL;
+    if (url && iframe) {
+        iframe.src = url;
         const link = document.getElementById('openwebui-link');
-        if (link) link.href = OPENWEBUI_URL;
+        if (link) link.href = url;
     }
     // apply saved position/size
     applyChatPanelState();

@@ -1,21 +1,68 @@
-from flask import Flask, jsonify, request, send_from_directory, render_template_string
+from flask import Flask, jsonify, request, send_from_directory, render_template_string, Response
 from flask import session, redirect
 from flask_cors import CORS
 import os
+import json
 import markdown
 import requests
 try:
     from dotenv import load_dotenv
 except Exception:
-    def load_dotenv():
+    def load_dotenv(*args, **kwargs):
         return None
 from pathlib import Path
 from datetime import datetime
 
-load_dotenv()
+# Load .env and allow overriding existing env vars when present
+try:
+    load_dotenv(override=True)
+except TypeError:
+    # older python-dotenv versions may not accept override arg
+    load_dotenv()
+
+# If python-dotenv is available, read .env values directly and ensure WIKI_PATH from .env
+try:
+    from dotenv import dotenv_values
+    dotvals = dotenv_values()
+    if dotvals and dotvals.get('WIKI_PATH'):
+        # prefer .env value and set it in the process env so the rest of the app uses it
+        os.environ['WIKI_PATH'] = dotvals.get('WIKI_PATH')
+except Exception:
+    # If python-dotenv isn't installed, fall back to a tiny manual parser below.
+    def _load_dotenv_manually(fn='.env', override=True):
+        try:
+            p = Path(fn)
+            if not p.exists():
+                return {}
+            vals = {}
+            text = p.read_text(encoding='utf-8')
+            for line in text.splitlines():
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' not in line:
+                    continue
+                k, v = line.split('=', 1)
+                k = k.strip()
+                v = v.strip()
+                # strip surrounding quotes
+                if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                    v = v[1:-1]
+                vals[k] = v
+                if override or k not in os.environ:
+                    os.environ[k] = v
+            return vals
+        except Exception:
+            return {}
+
+    dotvals = _load_dotenv_manually()
+    if dotvals.get('WIKI_PATH'):
+        os.environ['WIKI_PATH'] = dotvals.get('WIKI_PATH')
 
 app = Flask(__name__, static_folder='frontend', static_url_path='')
 CORS(app)
+
+print(f"[IsaWiki] Effective WIKI_PATH={os.environ.get('WIKI_PATH')} (cwd={os.getcwd()})")
 
 # Use environment variable or default mount
 WIKI_PATH = os.environ.get('WIKI_PATH', '/mnt/na')
@@ -127,6 +174,25 @@ def get_files_meta():
     items = _scan_markdown_files(base, max_depth=max_depth, include_hidden=include_hidden)
     return jsonify(items)
 
+
+@app.route('/api/scan_status', methods=['GET'])
+def scan_status():
+    """Simple debug endpoint returning mount path info and a small sample of markdown files."""
+    base = Path(WIKI_PATH)
+    exists = base.exists()
+    sample = []
+    count = 0
+    if exists:
+        items = _scan_markdown_files(base, max_depth=6, include_hidden=False)
+        count = len(items)
+        sample = items[:10]
+    return jsonify({
+        'WIKI_PATH': WIKI_PATH,
+        'exists': exists,
+        'count': count,
+        'sample': sample,
+    })
+
 # ---------------- PAGE READ ----------------
 @app.route('/api/page/<path:filename>', methods=['GET'])
 def get_page(filename):
@@ -173,7 +239,8 @@ def login():
         session['user'] = username
         if request.is_json:
             return jsonify({'ok': True})
-        return redirect('/')
+        # After login, send the user to the protected SPA entrypoint.
+        return redirect('/app')
 
     if request.is_json:
         return jsonify({'error': 'invalid credentials'}), 401
@@ -201,6 +268,10 @@ def require_login():
         return None
 
     # Allow API requests that carry the LLM API key (for bridge/authenticated clients)
+    # Allow a few read-only diagnostic/file-list endpoints without login
+    if path.startswith('/api/scan_status') or path.startswith('/api/files_meta') or path.startswith('/api/files'):
+        return None
+
     if path.startswith('/api'):
         key = request.headers.get('X-Api-Key') or (request.get_json(silent=True) or {}).get('key')
         api_key = os.environ.get('LLM_API_KEY')
@@ -305,9 +376,32 @@ def ai_chat():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/config.js')
+def serve_config_js():
+    """Dynamically generate a small client-side config script from environment vars.
+
+    Only expose non-secret, frontend-safe settings here.
+    """
+    cfg = {
+        'API_BASE': os.environ.get('API_BASE', '/api'),
+        'OPENWEBUI_URL': os.environ.get('OPENWEBUI_URL', 'http://127.0.0.1:8080'),
+    }
+    safe_cfg = {k: v for k, v in cfg.items() if v is not None and v != ''}
+    js = 'window.CONFIG = ' + json.dumps(safe_cfg) + ';'
+    return Response(js, mimetype='application/javascript')
+
 # ---------------- FRONTEND ----------------
 @app.route('/')
 def serve_frontend():
+    # Always show the login page when the root URL is requested.
+    # The actual single-page app is served from `/app` after a successful login.
+    return redirect('/login')
+
+
+@app.route('/app')
+def serve_app():
+    # Protected SPA entrypoint. Only serve when logged in.
     index = Path('frontend') / 'index.html'
     if index.exists():
         return send_from_directory('frontend', 'index.html')

@@ -1,0 +1,19 @@
+# Python virtual env
+.venv/
+env/
+
+# Local env files
+.env
+.env.local
+
+# Bytecode and caches
+__pycache__/
+*.pyc
+
+# Editor/OS metadata
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
