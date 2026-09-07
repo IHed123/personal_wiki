@@ -155,25 +155,178 @@ body.sidebar-collapsed #sidebar .sidebar-icon { display:block }
     background: linear-gradient(180deg, #fbfdff, #ffffff);
 }
 
-/* Responsive: stack sidebar and main on small screens */
+/* MOBILE OPTIMIZATIONS */
 @media (max-width: 900px) {
-    body { height: auto; flex-direction: column; }
-    #sidebar { width: 100%; display:flex; padding:12px; gap:12px; align-items:center; box-shadow: none }
-    #sidebar-header h2 { font-size:18px }
-    #main { display: block; padding: 12px; }
-    #editor-column { width: 100%; }
-    #viewer { width: 100%; padding:16px }
-    #editor { width: 100%; padding:12px; font-size:14px }
-    #file-tree { max-height: 180px; overflow:auto }
-    #chat-panel { right: 12px; left: 12px; bottom: 12px; width: auto; height: 50vh; }
+    body { 
+        height: auto; 
+        flex-direction: column; 
+    }
+    
+    #sidebar { 
+        width: 100%; 
+        height: auto;
+        display: flex; 
+        padding: 8px; 
+        gap: 8px; 
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        border-right: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    
+    #sidebar-header h2 { 
+        font-size: 16px;
+        margin: 0;
+    }
+    
+    #main { 
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    #editor-column { 
+        width: 100%; 
+        order: 2;
+    }
+    
+    #viewer { 
+        width: 100%; 
+        padding: 12px;
+        order: 1;
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+    
+    #editor { 
+        width: 100%; 
+        padding: 8px; 
+        font-size: 14px;
+        min-height: 300px;
+    }
+    
+    #file-tree { 
+        max-height: 150px; 
+        overflow-y: auto;
+        display: none;
+    }
+    
+    body.sidebar-expanded #file-tree {
+        display: block;
+        width: 100%;
+    }
+    
+    #search {
+        display: none;
+    }
+    
+    #chat-panel { 
+        right: 8px; 
+        left: 8px; 
+        bottom: 8px; 
+        width: auto; 
+        height: 50vh;
+    }
+    
+    #editor-header {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    #current-file {
+        word-break: break-all;
+    }
 }
 
-@media (max-width: 480px) {
-    #sidebar { padding:10px }
-    #new-file, #delete-file { padding:6px 8px }
-    #preview-toggle { padding:6px 8px }
-    #editor-header { padding:10px }
-    #editor { font-size:13px }
+@media (max-width: 600px) {
+    #sidebar {
+        padding: 6px;
+        gap: 4px;
+    }
+    
+    #sidebar-header {
+        width: 100%;
+    }
+    
+    #sidebar-toggle {
+        padding: 4px;
+        font-size: 16px;
+    }
+    
+    #settings-btn {
+        padding: 4px;
+        font-size: 16px;
+    }
+    
+    #main {
+        padding: 4px;
+        gap: 4px;
+    }
+    
+    #editor { 
+        font-size: 13px;
+        padding: 6px;
+        min-height: 200px;
+    }
+    
+    #viewer {
+        padding: 8px;
+        font-size: 14px;
+    }
+    
+    #editor-header { 
+        padding: 6px;
+        font-size: 11px;
+    }
+    
+    #file-tree li {
+        padding: 2px 4px;
+        margin-bottom: 0px;
+        font-size: 11px;
+    }
+    
+    #chat-open {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    #chat-panel {
+        height: 40vh;
+        min-height: 200px;
+    }
+    
+    #settings-page {
+        padding: 16px;
+    }
+    
+    .settings-row {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    #sidebar-header h2 {
+        display: none;
+    }
+    
+    #sidebar {
+        justify-content: space-between;
+    }
+    
+    #editor {
+        font-size: 12px;
+        min-height: 150px;
+    }
+    
+    #viewer {
+        font-size: 13px;
+    }
+    
+    #chat-panel {
+        height: 35vh;
+    }
 }
 
 #editor-column { display:flex; flex-direction:column; width:70%; transition: all .16s ease }
