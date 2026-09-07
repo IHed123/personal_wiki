@@ -1566,6 +1566,293 @@ If you would like, I can also:
 - Produce a `docker-compose.yml` and `Dockerfile` for containerized deployment instead.
 
 Tell me which of the above you want next and I'll create the files. 
-#   p e r s o n a l _ w i k i  
- #   p e r s o n a l _ w i k i  
- 
+
+After developing IsaWiki on your Mini ITX (with full backend, frontend, and AI integration code ready), we deployed it to your DV6 server to run permanently, accessible from anywhere via Tailscale.
+
+Step 1: Clone Repository from GitHub to DV6
+
+Accessed DV6 via SSH:
+
+bash
+ssh ihed@100.120.111.68
+
+Cloned your GitHub repository:
+
+bash
+cd ~
+git clone https://github.com/IHed123/personal_wiki.git my-wiki-prod
+cd my-wiki-prod
+
+This downloaded all your code (Flask backend, HTML/CSS/JavaScript frontend, config files) from GitHub to DV6 at /home/ihed/my-wiki-prod.
+
+Step 2: Install Python Virtual Environment
+
+Problem: DV6 had Python installed, but needed isolated environment to avoid conflicts with system packages.
+
+Installed venv package:
+
+bash
+sudo apt install python3-venv
+
+Created virtual environment:
+
+bash
+python3 -m venv .venv
+
+This created .venv/ folder containing isolated Python installation.
+
+Activated it:
+
+bash
+source .venv/bin/activate
+
+Prompt changed to (.venv) ihed@isaserver:~/my-wiki-prod$ indicating venv was active.
+
+Step 3: Install Python Dependencies
+
+With venv activated, installed all required packages:
+
+bash
+pip install -r requirements.txt
+
+Installed:
+
+Flask>=2.0 — Web framework for backend server
+flask-cors — Allow cross-origin requests (frontend ↔ backend)
+markdown — Convert .md files to HTML for viewing
+python-dotenv — Load environment variables from .env file
+requests — Make HTTP requests to LLM server (Open WebUI)
+
+All packages installed into .venv/, not system-wide.
+
+Step 4: Configure Environment File
+
+Copied example config:
+
+bash
+cp .env.example .env
+
+Edited with nano:
+
+bash
+nano .env
+
+Set values (your specific configuration):
+
+WIKI_PATH=/mnt/nas
+PORT=8082
+LLM_HOST=http://[your-mini-itx-ip]:8080
+WIKI_USER=ihed
+WIKI_PASS=yourpassword
+SECRET_KEY=somethingsecret123
+
+What each does:
+
+WIKI_PATH=/mnt/nas — Point to external SSD where markdown files live
+PORT=8082 — Flask listens on port 8082
+LLM_HOST — Address of Open WebUI running on your Mini ITX
+WIKI_USER / WIKI_PASS — Login credentials for web interface
+SECRET_KEY — Security token for session cookies
+
+Saved with Ctrl+X, Y, Enter.
+
+Step 5: Test Flask Application
+
+Started Flask server:
+
+bash
+python3 app.py
+
+Output:
+
+Running on http://0.0.0.0:8082
+
+Flask started successfully on DV6.
+
+From your Mini ITX, opened browser:
+
+http://100.120.111.68:8082
+
+Saw:
+
+✓ Login page (with username/password fields)
+✓ After login: file tree from /mnt/nas
+✓ Could click files to view
+✓ Could edit in editor panel
+✓ Changes saved to SSD
+
+Verified working, then killed server with Ctrl+C.
+
+Step 6: Create Systemd Service (Auto-Start)
+
+Problem: Flask exits when you disconnect SSH. Need it to run permanently.
+
+Created service file:
+
+bash
+sudo nano /etc/systemd/system/my-wiki.service
+
+Pasted service configuration:
+
+ini
+[Unit]
+Description=Personal Wiki
+After=network.target
+
+[Service]
+User=ihed
+WorkingDirectory=/home/ihed/my-wiki-prod
+EnvironmentFile=/home/ihed/my-wiki-prod/.env
+ExecStart=/home/ihed/my-wiki-prod/.venv/bin/python3 app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+What this does:
+
+[Unit] — Describes the service
+After=network.target — Start after network is up
+User=ihed — Run as user ihed (not root)
+WorkingDirectory — Start in project folder
+EnvironmentFile — Load variables from .env
+ExecStart — Command to run (Python app)
+Restart=on-failure — Auto-restart if it crashes
+RestartSec=5 — Wait 5 seconds before restarting
+WantedBy=multi-user.target — Enable at system boot
+
+Saved with Ctrl+X, Y, Enter.
+
+Step 7: Enable & Start the Service
+
+Reloaded systemd (tell it about new service):
+
+bash
+sudo systemctl daemon-reload
+
+Enable on boot:
+
+bash
+sudo systemctl enable my-wiki
+
+Start it now:
+
+bash
+sudo systemctl start my-wiki
+
+Check status:
+
+bash
+sudo systemctl status my-wiki
+
+Output:
+
+● my-wiki.service - Personal Wiki
+   Loaded: loaded (/etc/systemd/system/my-wiki.service; enabled; preset: enabled)
+   Active: active (running) since [timestamp]
+
+Service running successfully! ✓
+
+Now:
+
+Wiki runs automatically on DV6 boot
+Stays running permanently
+Auto-restarts if it crashes
+Accessible 24/7 at http://100.120.111.68:8082
+Step 8: Enable Tailscale Funnel (Worldwide Access)
+
+Made wiki accessible from anywhere (not just local network):
+
+bash
+sudo tailscale funnel 8082
+
+Output:
+
+Available on the internet:
+https://isaserver.tail745203.ts.net/
+|-- proxy http://127.0.0.1:8082
+
+Now accessible from anywhere in the world without port forwarding:
+
+https://isaserver.tail745203.ts.net/
+Step 9: Development Workflow
+Making Changes on Mini ITX
+
+Edit code in VS Code on your development machine:
+
+app.py — Backend changes
+frontend/app.js — JavaScript changes
+frontend/style.css — Style changes
+etc.
+Commit & Push to GitHub
+
+When ready to deploy:
+
+bash
+cd C:\Users\isaem\OneDrive\Documents\diy_wiki
+git add .
+git commit -m "Description of changes"
+git push origin main
+
+Code pushed to GitHub with full history/timestamps.
+
+Pull & Deploy on DV6
+
+SSH into DV6:
+
+bash
+ssh ihed@100.120.111.68
+cd ~/my-wiki-prod
+git pull origin main
+sudo systemctl restart my-wiki
+
+What happens:
+
+git pull origin main — Downloads latest code from GitHub
+sudo systemctl restart my-wiki — Restarts Flask service
+New code now running on DV6
+
+For frontend-only changes (HTML/CSS/JS):
+
+Just do git pull → Flask auto-reloads (because debug=True)
+No restart needed
+
+For backend changes (Python):
+
+Need systemctl restart to reload code
+Architecture After Deployment
+Mini ITX (Your development machine)
+├── VS Code (edit code)
+├── Open WebUI (LLM/AI)
+└── Ollama (runs local AI models)
+    ↓ (push code to GitHub)
+    ↓ 
+GitHub Repository (backup & version history)
+    ↓ (pull code from GitHub)
+    ↓
+DV6 Server (Ubuntu, running 24/7)
+├── Flask backend (port 8082)
+├── Frontend files (HTML/CSS/JS)
+└── Reads/writes files to:
+    └── External SSD (/mnt/nas)
+        ├── projects/
+        ├── notes/
+        ├── etc.
+        └── All your markdown files
+    ↑
+Access from any browser via:
+https://isaserver.tail745203.ts.net/
+Summary
+
+You now have a fully deployed personal wiki:
+
+✓ Backend running on DV6 (permanent, auto-restart)
+✓ Reads files from external SSD
+✓ Web frontend accessible from anywhere
+✓ Can edit files through browser
+✓ Code backed up on GitHub
+✓ Easy to update (push → pull → restart)
+✓ AI integration ready (Open WebUI embedded in sidebar)
+✓ Login authentication
+✓ Auto-starts on server reboot
