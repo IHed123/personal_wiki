@@ -130,6 +130,19 @@ body.sidebar-collapsed #sidebar .sidebar-icon { display:block }
     background: #f6fbff;
     transform: translateX(4px);
 }
+
+#file-tree ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: block;  /* ENSURE VERTICAL STACKING */
+}
+
+#file-tree ul ul {
+    padding-left: 16px;  /* INDENT NESTED FOLDERS */
+    border-left: 1px solid #e8f0ff;  /* VISUAL LINE */
+    margin-left: 4px;
+}
 .folder {
     font-weight: bold;
     padding-left: 8px;  

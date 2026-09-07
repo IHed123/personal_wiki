@@ -98,12 +98,12 @@ function renderTree(tree, container, prefix = "") {
     Object.keys(tree).forEach(key => {
         const li = document.createElement("li");
         if (tree[key] === null) {
-            li.textContent = key;
+            li.textContent = '📄 ' + key;
             li.dataset.path = prefix + key;
             li.classList.add('file-item');
             li.onclick = (e) => { e.stopPropagation(); loadPage(prefix + key); };
         } else {
-            li.textContent = key;
+            li.textContent = '📁 ' + key;
             li.classList.add("folder");
 
             const subList = document.createElement("ul");
