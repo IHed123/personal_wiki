@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Isa Wiki</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <div id="sidebar-header">
+        <div style="display:flex;align-items:center;gap:8px">
+            <button id="sidebar-toggle" aria-label="Toggle sidebar" style="background:transparent;border:none;font-size:18px;padding:6px;cursor:pointer">☰</button>
+            <h2>Isa Wiki</h2>
+        </div>
+        <button id="settings-btn">⚙️</button>
+    </div>
+
+    <input id="search" placeholder="Search files...">
+    <ul id="file-tree"></ul>
+
+    <button id="chat-open">AI Chat</button>
+</div>
+
+<div id="main">
+    <div id="viewer"></div>
+    <div id="editor-column">
+        <div id="editor-header">File: <span id="current-file">(none)</span>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                
+            </div>
+        </div>
+        <textarea id="editor" placeholder="Start typing..."></textarea>
+    </div>
+</div>
+
+<!-- SETTINGS PAGE (full screen) -->
+<div id="settings-page">
+    <div id="settings-header">
+        <button id="settings-back">← Back</button>
+        <h2>Settings</h2>
+    </div>
+    <div id="settings-content">
+        <div class="settings-row">
+            <label>
+                <input type="checkbox" id="toggle-dark">
+                Light Mode
+            </label>
+        </div>
+
+        <div class="settings-row">
+            <label>
+                <input type="checkbox" id="toggle-autosave" checked>
+                Autosave
+            </label>
+        </div>
+
+        <div class="settings-row">
+            <label>
+                <input type="checkbox" id="toggle-editing">
+                Editing Mode (on = edit; off = preview-only)
+            </label>
+        </div>
+
+        <div class="settings-row">
+            <label>
+                <input type="checkbox" id="toggle-split">
+                Split view (side-by-side live preview)
+            </label>
+        </div>
+
+        <div class="settings-row">
+            <label>
+                Font Size:
+                <input type="range" id="font-size" min="12" max="24" value="16">
+            </label>
+        </div>
+        <div class="settings-row">
+            <button id="logout-btn" style="background:#fff;border:1px solid #eef2ff;padding:8px 10px;border-radius:8px;cursor:pointer">Log out</button>
+        </div>
+    </div>
+</div>
+
+<!-- AI CHAT PANEL (embedded OpenWebUI) -->
+<div id="chat-panel">
+    <div id="chat-toolbar">
+        <div>OpenWebUI (embedded)</div>
+        <div>
+            <a id="openwebui-link" href="#" target="_blank" style="color:#ddd;margin-right:8px;">Open in new tab</a>
+            <button id="chat-close">Close</button>
+        </div>
+    </div>
+    <iframe id="openwebui-iframe" src="about:blank" style="width:100%;height:100%;border:none;" title="OpenWebUI"></iframe>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
