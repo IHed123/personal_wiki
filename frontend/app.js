@@ -27,7 +27,9 @@ async function loadFiles() {
         }
     }
 
-    renderSections(items, document.getElementById('file-tree'));
+    const files = items.map(it => it.path);
+const tree = buildTree(files);
+renderTree(tree, document.getElementById('file-tree'));
 }
 
 

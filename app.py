@@ -131,7 +131,7 @@ def _scan_markdown_files(base_path: Path, max_depth=6, include_hidden=False):
             section = parts[0] if len(parts) > 1 else ''
             items.append({
                 'path': rel,
-                'title': rel,
+                'title': Path(rel).stem,
                 'section': section,
                 'mtime': mtime,
             })
