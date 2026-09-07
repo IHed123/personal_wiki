@@ -114,20 +114,22 @@ body.sidebar-collapsed #sidebar .sidebar-icon { display:block }
 }
 
 /* FILE TREE */
-#file-tree li {
-    list-style: none;
-    padding: 3px 6px;  /* TINY PADDING */
-    margin-bottom: 1px;  /* ALMOST NO GAP */
-    font-size: 12px;  /* SMALL FONT */
-    cursor: pointer;
+#file-tree li { 
+    list-style:none; 
+    padding:3px 6px;
+    margin-bottom:1px;
+    border-radius:8px; 
+    cursor:pointer; 
     transition: all .14s ease;
+    display:block;  /* CHANGED FROM flex TO block */
+    border:1px solid transparent;
+    font-size: 12px;
 }
 
 #file-tree li:hover {
-    background: #f6f7fb;
+    background: #f6fbff;
     transform: translateX(4px);
 }
-
 .folder {
     font-weight: bold;
     padding-left: 8px;  
