@@ -162,6 +162,7 @@ except Exception:
 	def load_dotenv():
 		return None
 from pathlib import Path
+from datetime import datetime
 
 load_dotenv()
 
@@ -181,6 +182,7 @@ AUTH_PASS = os.environ.get('WIKI_PASS', '09250610')
 # ---------------- FILE LIST ----------------
 @app.route('/api/files', methods=['GET'])
 def get_files():
+	# Backwards-compatible simple file list (array of relative paths)
 	files = []
 	base = Path(WIKI_PATH)
 	if not base.exists():
@@ -192,6 +194,90 @@ def get_files():
 			continue
 	files.sort()
 	return jsonify(files)
+
+
+def _extract_title_from_markdown(text):
+	# Heuristic: first H1 or first non-empty line
+	for line in text.splitlines():
+		line = line.strip()
+		if not line:
+			continue
+		if line.startswith('# '):
+			return line[2:].strip()
+		if line.startswith('#'):
+			# other heading levels
+			return line.lstrip('#').strip()
+		# fallback: first non-empty line shorter than 120 chars
+		if len(line) < 120:
+			return line
+	return None
+
+
+def _scan_markdown_files(base_path: Path, max_depth=6, include_hidden=False):
+	base = Path(base_path)
+	items = []
+	if not base.exists():
+		return items
+
+	for p in base.rglob('*.md'):
+		try:
+			# depth heuristic
+			rel = p.relative_to(base).as_posix()
+			depth = len(Path(rel).parts)
+			if depth > max_depth:
+				continue
+			# skip hidden files/dirs when not allowed
+			if not include_hidden and any(part.startswith('.') for part in Path(rel).parts):
+				continue
+
+			stat = p.stat()
+			mtime = datetime.fromtimestamp(stat.st_mtime).isoformat()
+			title = None
+			try:
+				with open(p, 'r', encoding='utf-8') as f:
+					raw = f.read(4096)
+					title = _extract_title_from_markdown(raw)
+			except Exception:
+				title = None
+
+			# section: use the first path component if present, otherwise root
+			parts = Path(rel).parts
+			section = parts[0] if len(parts) > 1 else ''
+
+			items.append({
+				'path': rel,
+				'title': title or Path(rel).stem,
+				'section': section,
+				'mtime': mtime,
+			})
+		except Exception:
+			continue
+
+	# sort first by section then title
+	items.sort(key=lambda x: (x.get('section', ''), x.get('title', '').lower()))
+	return items
+
+
+@app.route('/api/files_meta', methods=['GET'])
+def get_files_meta():
+	"""Return structured metadata for markdown files: path, title, section, mtime.
+
+	Query params:
+	- max_depth (int): limit directory depth scanned (default 6)
+	- include_hidden (bool): include dotfiles and dotdirs (default false)
+	"""
+	base = Path(WIKI_PATH)
+	if not base.exists():
+		return jsonify([])
+
+	try:
+		max_depth = int(request.args.get('max_depth', 6))
+	except Exception:
+		max_depth = 6
+	include_hidden = request.args.get('include_hidden', 'false').lower() in ('1', 'true', 'yes')
+
+	items = _scan_markdown_files(base, max_depth=max_depth, include_hidden=include_hidden)
+	return jsonify(items)
 
 # ---------------- PAGE READ ----------------
 @app.route('/api/page/<path:filename>', methods=['GET'])
