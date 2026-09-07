@@ -395,7 +395,7 @@ def serve_app():
         return redirect('/login')
 
     # Protected SPA entrypoint. Only serve when logged in.
-    index = Path('frontend') / 'index.html'
+    index = Path('frontend') / ('index.html')
     if index.exists():
         return send_from_directory('frontend', 'index.html')
     return render_template_string('<h1>IsaWiki</h1><p>Frontend not found.</p>')
