@@ -392,7 +392,7 @@ def serve_frontend():
 @app.route('/app')
 def serve_app():
     if not session.get('user'):
-    return redirect('/login')
+       return redirect('/login')
 
     # Protected SPA entrypoint. Only serve when logged in.
     index = Path('frontend') / 'index.html'
