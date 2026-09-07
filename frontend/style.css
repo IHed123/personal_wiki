@@ -24,7 +24,7 @@ body {
     border-right: 1px solid #eee;
     padding: 18px;
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow-y: auto;  /* ALREADY HERE - allows scrolling */
     box-shadow: 0 2px 10px rgba(20,20,40,0.04);
 }
 
@@ -116,10 +116,11 @@ body.sidebar-collapsed #sidebar .sidebar-icon { display:block }
 /* FILE TREE */
 #file-tree li {
     list-style: none;
-    padding: 8px;
+    padding: 3px 6px;  /* TINY PADDING */
+    margin-bottom: 1px;  /* ALMOST NO GAP */
+    font-size: 12px;  /* SMALL FONT */
     cursor: pointer;
-    border-radius: 8px;
-    transition: background .12s ease, transform .08s ease;
+    transition: all .14s ease;
 }
 
 #file-tree li:hover {
@@ -129,6 +130,7 @@ body.sidebar-collapsed #sidebar .sidebar-icon { display:block }
 
 .folder {
     font-weight: bold;
+    padding-left: 8px;  
 }
 
 /* MAIN */
