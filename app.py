@@ -92,19 +92,16 @@ def get_files():
 
 
 def _extract_title_from_markdown(text):
-    # Heuristic: first H1 or first non-empty line
+    # Heuristic: return the first Markdown heading (any level, e.g. '#', '##').
+    # Do NOT use the first non-empty line as a title because that often captures
+    # content lines and causes file listings to show content instead of filenames.
     for line in text.splitlines():
         line = line.strip()
         if not line:
             continue
-        if line.startswith('# '):
-            return line[2:].strip()
         if line.startswith('#'):
-            # other heading levels
+            # strip leading '#' characters and surrounding whitespace
             return line.lstrip('#').strip()
-        # fallback: first non-empty line shorter than 120 chars
-        if len(line) < 120:
-            return line
     return None
 
 
@@ -127,21 +124,14 @@ def _scan_markdown_files(base_path: Path, max_depth=6, include_hidden=False):
 
             stat = p.stat()
             mtime = datetime.fromtimestamp(stat.st_mtime).isoformat()
-            title = None
-            try:
-                with open(p, 'r', encoding='utf-8') as f:
-                    raw = f.read(4096)
-                    title = _extract_title_from_markdown(raw)
-            except Exception:
-                title = None
 
-            # section: use the first path component if present, otherwise root
+            # Use filename (without extension) as title always. Avoid using
+            # file content heuristics so the UI consistently shows filenames.
             parts = Path(rel).parts
             section = parts[0] if len(parts) > 1 else ''
-
             items.append({
                 'path': rel,
-                'title': title or Path(rel).stem,
+                'title': Path(rel).stem,
                 'section': section,
                 'mtime': mtime,
             })
