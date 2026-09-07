@@ -1566,3 +1566,5 @@ If you would like, I can also:
 - Produce a `docker-compose.yml` and `Dockerfile` for containerized deployment instead.
 
 Tell me which of the above you want next and I'll create the files. 
+#   p e r s o n a l _ w i k i  
+ 
